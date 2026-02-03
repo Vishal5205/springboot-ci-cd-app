@@ -17,10 +17,8 @@ pipeline {
         }
         stage('Quality Gate') {
             steps {
-                sleep time: 30, unit: 'SECONDS'  // Wait for SonarCloud processing
-                timeout(time: 8, unit: 'MINUTES') {
-                    def qg = waitForQualityGate()
-                    echo "Quality Gate Status: ${qg.status}"
+                timeout(time: 10, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: false
                 }
             }
         }
@@ -28,7 +26,7 @@ pipeline {
             steps {
                 script {
                     def img = docker.build("${DOCKER_IMAGE}:${BUILD_ID}")
-                    echo "✅ Docker image built: ${img.id}"
+                    echo "Docker image built: ${img.id}"
                 }
             }
         }
@@ -36,16 +34,15 @@ pipeline {
             steps {
                 script {
                     docker.withRegistry('https://index.docker.io/v1/', 'dockerhub') {
-                        docker.image("${DOCKER_IMAGE}:${BUILD_ID}").push()
                         docker.image("${DOCKER_IMAGE}:${BUILD_ID}").push('latest')
                     }
-                    echo "🚀 Docker image pushed to Docker Hub!"
+                    echo "Docker image pushed to Docker Hub"
                 }
             }
         }
     }
     post {
-        success { echo '🎉 FULL CI/CD SUCCESS! Ready for ArgoCD' }
-        failure { echo '❌ Pipeline failed - check logs' }
+        success { echo 'Pipeline completed successfully' }
+        failure { echo 'Pipeline failed - check logs' }
     }
 }
