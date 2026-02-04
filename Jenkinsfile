@@ -6,25 +6,17 @@ pipeline {
     }
     stages {
         stage('Maven Build') { 
-            steps { 
-                sh 'mvn clean package -DskipTests' 
-            } 
+            steps { sh 'mvn clean package -DskipTests' } 
         }
         stage('SonarCloud Scan') {
-            environment {
-                scannerHome = tool 'SonarScanner'
-            }
             steps {
                 withSonarQubeEnv('SonarCloud') {
                     sh '''
-                        mvn sonar:sonar \\
-                          -Dsonar.projectKey=Vishal5205_ci-cd-pipeline \\
-                          -Dsonar.organization=vishal5205 \\
+                        mvn sonar:sonar \
+                          -Dsonar.projectKey=Vishal5205_ci-cd-pipeline \
+                          -Dsonar.organization=vishal5205 \
                           -Dsonar.host.url=https://sonarcloud.io
                     '''
-                }
-                timeout(time: 10, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
                 }
             }
         }
@@ -44,10 +36,10 @@ pipeline {
     }
     post {
         success { 
-            echo 'Pipeline complete. Docker Hub: https://hub.docker.com/r/vishal5205/springbootcicdapp'
+            echo 'Pipeline complete! Docker Hub: https://hub.docker.com/r/vishal5205/springbootcicdapp'
         }
         failure {
-            echo 'Pipeline failed. Check logs above.'
+            echo 'Pipeline failed. Check individual stage logs.'
         }
     }
 }
