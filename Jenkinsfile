@@ -1,17 +1,22 @@
 pipeline {
     agent any
-    tools { maven 'Maven3' }
+    tools { 
+        maven 'Maven3' 
+    }
     environment {
-        SONAR_PROJECT = 'vishal5205_springboot-ci-cd-app'  // Fixed: lowercase
+        SONAR_PROJECT = 'vishal5205_springboot-ci-cd-app'
         DOCKER_IMAGE = 'vishal5205/springbootcicdapp'
-        DOCKER_CREDENTIAL_ID = 'dockerhub'                 // Added: credential ID
     }
     stages {
-        stage('Checkout') { steps { checkout scm } }
-        stage('Maven Build') { steps { sh 'mvn clean package -DskipTests' } }
+        stage('Checkout') { 
+            steps { checkout scm } 
+        }
+        stage('Maven Build') { 
+            steps { sh 'mvn clean package -DskipTests' } 
+        }
         stage('SonarCloud Scan') {
             steps {
-                withSonarQubeEnv('SonarCloud') {
+                withSonarQubeEnv('SonarCloud') {  // ← Match EXACT Jenkins config name
                     sh '''
                         mvn sonar:sonar \
                         -Dsonar.projectKey=${SONAR_PROJECT} \
@@ -23,7 +28,7 @@ pipeline {
         }
         stage('Quality Gate') {
             steps {
-                timeout(time: 10, unit: 'MINUTES') {
+                timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: false
                 }
             }
@@ -31,26 +36,30 @@ pipeline {
         stage('Docker Build') {
             steps {
                 script {
-                    def img = docker.build("${DOCKER_IMAGE}:${BUILD_ID}")
-                    echo "Docker image built: ${img.id}"
+                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_ID} ."
+                    sh "docker tag ${DOCKER_IMAGE}:${BUILD_ID} ${DOCKER_IMAGE}:latest"
+                    echo "Docker images built: ${BUILD_ID} and latest"
                 }
             }
         }
         stage('Docker Push') {
             steps {
-                script {
-                    docker.withRegistry('https://index.docker.io/v1/', "${DOCKER_CREDENTIAL_ID}") {
-                        def img = docker.image("${DOCKER_IMAGE}:${BUILD_ID}")
-                        img.push("${BUILD_ID}")
-                        img.push('latest')
-                    }
-                    echo "Docker image pushed to Docker Hub"
+                withCredentials([usernamePassword(credentialsId: 'dockerhub', 
+                    passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+                    sh 'echo $PASS | docker login -u $USER --password-stdin'
+                    sh "docker push ${DOCKER_IMAGE}:${BUILD_ID}"
+                    sh "docker push ${DOCKER_IMAGE}:latest"
+                    echo "Docker images pushed successfully"
                 }
             }
         }
     }
     post {
-        success { echo 'Pipeline completed successfully' }
-        failure { echo 'Pipeline failed - check logs' }
+        success { 
+            echo 'Pipeline completed successfully - check Docker Hub and SonarCloud!'
+        }
+        failure { 
+            echo 'Pipeline failed - check logs' 
+        }
     }
 }
