@@ -15,21 +15,22 @@ pipeline {
                 }
             }
         }
-        stage('Docker Build') {
-            steps { 
-                sh "sudo docker build -t ${DOCKER_IMAGE}:${BUILD_ID} ."
-                sh "sudo docker tag ${DOCKER_IMAGE}:${BUILD_ID} ${DOCKER_IMAGE}:latest"
-            }
-        }
-        stage('Docker Push') {
+        stage('Docker Build & Push') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub', 
-                    passwordVariable: 'PASS', usernameVariable: 'USER')]) {
-                    sh 'echo $PASS | sudo docker login -u $USER --password-stdin'
-                    sh "sudo docker push ${DOCKER_IMAGE}:${BUILD_ID}"
-                    sh "sudo docker push ${DOCKER_IMAGE}:latest"
+                    passwordVariable: 'DOCKERHUB_PASS', usernameVariable: 'DOCKERHUB_USER')]) {
+                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_ID} ."
+                    sh "docker tag ${DOCKER_IMAGE}:${BUILD_ID} ${DOCKER_IMAGE}:latest"
+                    sh 'echo $DOCKERHUB_PASS | docker login -u $DOCKERHUB_USER --password-stdin'
+                    sh "docker push ${DOCKER_IMAGE}:${BUILD_ID}"
+                    sh "docker push ${DOCKER_IMAGE}:latest"
                 }
             }
+        }
+    }
+    post {
+        success { 
+            echo 'Pipeline complete. Docker Hub: https://hub.docker.com/r/vishal5205/springbootcicdapp'
         }
     }
 }
