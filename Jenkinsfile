@@ -12,9 +12,9 @@ pipeline {
             steps {
                 withSonarQubeEnv('SonarCloud') {
                     sh '''
-                        mvn sonar:sonar \
-                          -Dsonar.projectKey=Vishal5205_ci-cd-pipeline \
-                          -Dsonar.organization=vishal05 \
+                        mvn sonar:sonar \\
+                          -Dsonar.projectKey=springboot-ci-cd-app \\
+                          -Dsonar.organization=vishal05 \\
                           -Dsonar.host.url=https://sonarcloud.io
                     '''
                 }
