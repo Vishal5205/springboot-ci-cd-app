@@ -14,7 +14,7 @@ pipeline {
                     sh '''
                         mvn sonar:sonar \
                           -Dsonar.projectKey=Vishal5205_ci-cd-pipeline \
-                          -Dsonar.organization=vishal5205 \
+                          -Dsonar.organization=vishal05 \
                           -Dsonar.host.url=https://sonarcloud.io
                     '''
                 }
