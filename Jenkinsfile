@@ -2,8 +2,9 @@ pipeline {
     agent any
     tools { maven 'Maven3' }
     environment {
-        SONAR_PROJECT = 'Vishal5205_springboot-ci-cd-app'
+        SONAR_PROJECT = 'vishal5205_springboot-ci-cd-app'  // Fixed: lowercase
         DOCKER_IMAGE = 'vishal5205/springbootcicdapp'
+        DOCKER_CREDENTIAL_ID = 'dockerhub'                 // Added: credential ID
     }
     stages {
         stage('Checkout') { steps { checkout scm } }
@@ -11,7 +12,12 @@ pipeline {
         stage('SonarCloud Scan') {
             steps {
                 withSonarQubeEnv('SonarCloud') {
-                    sh 'mvn sonar:sonar -Dsonar.projectKey=$SONAR_PROJECT -Dsonar.organization=vishal5205'
+                    sh '''
+                        mvn sonar:sonar \
+                        -Dsonar.projectKey=${SONAR_PROJECT} \
+                        -Dsonar.organization=vishal5205 \
+                        -Dsonar.host.url=https://sonarcloud.io
+                    '''
                 }
             }
         }
@@ -33,8 +39,10 @@ pipeline {
         stage('Docker Push') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub') {
-                        docker.image("${DOCKER_IMAGE}:${BUILD_ID}").push('latest')
+                    docker.withRegistry('https://index.docker.io/v1/', "${DOCKER_CREDENTIAL_ID}") {
+                        def img = docker.image("${DOCKER_IMAGE}:${BUILD_ID}")
+                        img.push("${BUILD_ID}")
+                        img.push('latest')
                     }
                     echo "Docker image pushed to Docker Hub"
                 }
